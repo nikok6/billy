@@ -9,11 +9,12 @@ import 'package:flutter/material.dart';
 
 class ReusableButton extends StatelessWidget {
   
-  const ReusableButton({Key? key, required this.onPressed, required this.text, required this.styleId}) : super(key: key);
+  const ReusableButton({Key? key, required this.onPressed, required this.text, required this.styleId, this.icon}) : super(key: key);
 
   final VoidCallback onPressed;
   final String text;
   final int styleId;
+  final Icon? icon;
   
   @override
   Widget build(BuildContext context) {
@@ -33,6 +34,8 @@ class ReusableButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          icon ?? const SizedBox(width:0),
+          icon != null ? const SizedBox(width: 5) : const SizedBox(width: 0),
           Text(text, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
         ],
       ),

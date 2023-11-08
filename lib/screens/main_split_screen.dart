@@ -1,4 +1,4 @@
-import 'dart:ffi';
+
 
 import 'package:flutter/material.dart';
 import 'package:splitbill/screens/split_confirmation_screen.dart';
@@ -17,6 +17,8 @@ List<bool> isChecked = [
 ];
 
 class MainSplitScreen extends StatefulWidget {
+  const MainSplitScreen({super.key});
+
   @override
   _MainSplitScreenState createState() => _MainSplitScreenState();
 }

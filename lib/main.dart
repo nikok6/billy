@@ -1,6 +1,7 @@
 //redirect to home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:splitbill/screens/choose_method_split_screen.dart';
+import 'package:splitbill/screens/confirm_scanned_receipt.dart';
 import 'package:splitbill/screens/input_total_split_screen.dart';
 import 'package:splitbill/screens/sign_up_screen.dart';
 import 'package:splitbill/screens/tabs.dart';
@@ -61,7 +62,7 @@ class App extends StatelessWidget {
           labelLarge: TextStyle(color: Color(0xFFDDDDDD), fontFamily: 'Poppins', fontSize: 16), 
         ),
       ),
-      home: const TabsScreen(),
+      home: const ConfirmedScannedReceiptScreen(),
     );
   }
 }
