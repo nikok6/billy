@@ -37,7 +37,7 @@ class ChooseMethodSplitScreen extends StatelessWidget {
                 onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const InputTotalSplitScreen()),
+                  MaterialPageRoute(builder: (context) => InputTotalSplitScreen(socialId: socialId)),
                 );
                 },
                 child: Card(

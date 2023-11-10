@@ -3,7 +3,9 @@ import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:splitbill/screens/main_split_screen.dart';
 
 class InputTotalSplitScreen extends StatefulWidget {
-  const InputTotalSplitScreen({super.key});
+  const InputTotalSplitScreen({super.key, required this.socialId});
+
+  final String socialId;
 
   @override
   State<InputTotalSplitScreen> createState() => _InputTotalSplitScreenState();

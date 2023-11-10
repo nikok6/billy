@@ -37,30 +37,36 @@ Future<List<Friends>> fetchFriends() async {
 class Groups {
   final String groupName;
   final int membersCount;
+  final String id;
 
   const Groups({
     required this.groupName,
     required this.membersCount,
+    required this.id,
   });
 
   factory Groups.fromJson(Map<String, dynamic> json) {
     return Groups(
       groupName: json['name'],
       membersCount: json['membersCount'].toInt(),
+      id: json['id'],
     );
   }
 }
 
 class Friends {
   final String friendName;
+  final String id;
 
   const Friends({
     required this.friendName,
+    required this.id,
   });
 
   factory Friends.fromJson(Map<String, dynamic> json) {
     return Friends(
       friendName: json['name'],
+      id: json['id'],
     );
   }
 }
@@ -159,7 +165,8 @@ class _SocialScreenState extends State<SocialScreen> {
                               height: 160,
                               child: GroupCard(
                                   text: snapshot.data![index].groupName,
-                                  picture: "lntl"));
+                                  picture: "lntl",
+                                  id: snapshot.data![index].id));
                         },
                       ),
                       const SizedBox(

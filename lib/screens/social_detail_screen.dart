@@ -59,7 +59,9 @@ class Splits {
 }
 
 class SocialDetailScreen extends StatefulWidget {
-  const SocialDetailScreen({super.key});
+  const SocialDetailScreen({super.key, required this.socialId});
+
+  final String socialId;
 
   @override
   State<SocialDetailScreen> createState() => _SocialDetailScreenState();
@@ -290,7 +292,7 @@ class _SocialDetailScreenState extends State<SocialDetailScreen> {
             ReusableButton(onPressed: () {
               Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ChooseMethodSplitScreen()),
+                    MaterialPageRoute(builder: (context) => ChooseMethodSplitScreen(socialId: widget.socialId)),
                   );
             }, text: "Create new split", styleId: 1)
         ],),

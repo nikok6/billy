@@ -12,10 +12,12 @@ class GroupCard extends StatelessWidget {
     Key? key,
     required this.text,
     required this.picture,
+    required this.id,
   }) : super(key: key);
 
   final String text;
   final String picture;
+  final String id;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +25,7 @@ class GroupCard extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const SocialDetailScreen()),
+          MaterialPageRoute(builder: (context) => SocialDetailScreen(socialId: id)),
         );
       },
       child: Card(
