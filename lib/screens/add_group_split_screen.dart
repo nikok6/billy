@@ -32,14 +32,17 @@ Future<List<GroupsAndFriends>> fetchGroupsAndFriends() async {
 class GroupsAndFriends {
   final String name;
   final String type;
+  final String id;
 
   const GroupsAndFriends({
     required this.name,
     required this.type,
+    required this.id,
   });
 
   factory GroupsAndFriends.fromJson(Map<String, dynamic> json) {
     return GroupsAndFriends(
+      id: json['id'],
       name: json['name'],
       type: json['type'],
     );
@@ -174,7 +177,7 @@ class _AddGroupSplitScreenState extends State<AddGroupSplitScreen> {
                                             context,
                                             MaterialPageRoute(
                                                 builder: (context) =>
-                                                    const ChooseMethodSplitScreen()),
+                                                    ChooseMethodSplitScreen(socialId: snapshot.data![index].id)),
                                           );
                                         },),
                                   Divider(

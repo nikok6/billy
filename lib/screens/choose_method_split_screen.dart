@@ -5,7 +5,9 @@ import 'package:splitbill/screens/take_picture_screen.dart';
 
 class ChooseMethodSplitScreen extends StatelessWidget {
   
-  const ChooseMethodSplitScreen({super.key});
+  const ChooseMethodSplitScreen({super.key,  required this.socialId});
+
+  final String socialId;
 
   @override
   Widget build(BuildContext context) {

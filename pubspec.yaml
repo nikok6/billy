@@ -44,6 +44,7 @@ dependencies:
   path_provider: ^2.1.1
   camera: ^0.10.5+5
   video_player: ^2.7.2
+  grouped_list: ^5.1.2
 
 dev_dependencies:
   flutter_test:
