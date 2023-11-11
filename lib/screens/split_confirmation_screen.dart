@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:splitbill/widgets/button.dart';
+import 'package:splitbill/widgets/dashed_line.dart';
+import 'package:splitbill/widgets/half_circle_left.dart';
+import 'package:splitbill/widgets/half_circle_right.dart';
 
 class SplitConfirmationScreen extends StatefulWidget {
-  const SplitConfirmationScreen({super.key});
+  const SplitConfirmationScreen({super.key, required this.data, required this.names, required this.total, required this.description});
+  
+  final List<double> data;
+  final List<String> names;
+  final String total;
+  final String description;
 
   @override
   State<SplitConfirmationScreen> createState() =>
@@ -32,30 +40,35 @@ class _SplitConfirmationScreenState extends State<SplitConfirmationScreen> {
                 style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 40),
             Card(
-                margin: const EdgeInsets.fromLTRB(0, 0, 0, 25),
+                margin: const EdgeInsets.fromLTRB(0, 0, 0, 0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
                 surfaceTintColor: Theme.of(context).colorScheme.surface,
                 elevation: 10,
                 child: Container(
-                  margin: EdgeInsets.fromLTRB(15, 25, 15, 0),
+                  margin: const EdgeInsets.fromLTRB(0, 25, 0, 25),
                   child: Column(
                     children: [
-                      Text("Lunch at Tama",
+                      Text(widget.description,
                           style: Theme.of(context).textTheme.bodyLarge),
                       const SizedBox(
-                        height: 10,
+                        height: 20,
                       ),
-                      Text("Total",
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontSize: 18, fontWeight: FontWeight.w600)),
-                      Text(
-                        "\$500",
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontSize: 40,
-                            ),
-                      ),
+                      Row(
+                                  children: [
+                                    CustomPaint(
+                                        size: const Size(30, 30),
+                                        painter: HalfCircleLeft()),
+                                    CustomPaint(
+                                        size: const Size(283, 1),
+                                        painter: DashedLinePainter()),
+                                    CustomPaint(
+                                        size: const Size(30, 30),
+                                        painter: HalfCircleRight()),
+                                  ],
+                                ),
+                                const SizedBox(height: 5),
                       const SizedBox(height: 15),
                       ListView.builder(
                           shrinkWrap: true,
@@ -69,16 +82,53 @@ class _SplitConfirmationScreenState extends State<SplitConfirmationScreen> {
                                     Theme.of(context).colorScheme.primary,
                                 child: const Text("A"),
                               ),
-                              title: Text("Name",
+                              title: Text(widget.names[index],
                                   style: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium,),
-                              trailing: Text("\$100.00",
+                              trailing: Text('\$${widget.data[index].toString()}',
                                   style: Theme.of(context)
                                                 .textTheme
                                                 .bodyMedium,),
                             );
                           }),
+                          Row(
+                                  children: [
+                                    CustomPaint(
+                                        size: Size(30, 30),
+                                        painter: HalfCircleLeft()),
+                                    CustomPaint(
+                                        size: Size(283, 1),
+                                        painter: DashedLinePainter()),
+                                    CustomPaint(
+                                        size: Size(30, 30),
+                                        painter: HalfCircleRight()),
+                                  ],
+                                ),
+                                const SizedBox(height: 15),
+                          Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 25.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text("Total",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w600)),
+                                      Text(
+                                        "\$${widget.total}",
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyLarge,
+                                      ),
+                                    ],
+                                  ),
+                                ),
                     ],
                   ),
                 )),

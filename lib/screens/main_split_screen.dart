@@ -1167,7 +1167,7 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const SplitConfirmationScreen()),
+                        builder: (context) => SplitConfirmationScreen(data: personCurrentShare[tabController.index], names: name, total: widget.total, description: widget.description,)),
                   );
                 }
               },

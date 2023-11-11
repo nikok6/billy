@@ -12,9 +12,9 @@ Billy is a mobile application that simplifies bill splitting with friends. You c
 
 To get started with Billy, follow these steps:
 
-1. **Clone the Repository**: `git clone https://github.com/your-username/Billy.git`
+1. **Clone the Repository**: `git clone https://github.com/nikok6/billy.git`
 
-2. **Navigate to the Project Directory**: `cd Billy`
+2. **Navigate to the Project Directory**: `cd billy`
 
 3. **Install Dependencies**: Run `flutter pub get` to install the required packages.
 
