@@ -78,7 +78,7 @@ class ChooseMethodSplitScreen extends StatelessWidget {
                 onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const InitializeCamera()),
+                  MaterialPageRoute(builder: (context) => InitializeCamera(socialId: socialId)),
                 );
                 },
                 child: Card(

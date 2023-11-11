@@ -192,7 +192,9 @@ class Receipt {
 }
 
 class ConfirmedScannedReceiptScreen extends StatefulWidget {
-  const ConfirmedScannedReceiptScreen({super.key});
+  const ConfirmedScannedReceiptScreen({super.key, required this.socialId});
+
+  final String socialId;
 
   @override
   State<ConfirmedScannedReceiptScreen> createState() =>
@@ -611,7 +613,7 @@ class _ConfirmedScannedReceiptScreenState
                                       context,
                                       MaterialPageRoute(
                                           builder: (context) =>
-                                              MainSplitScreen()));
+                                              MainSplitScreen(socialId: widget.socialId, total: snapshot.data!.total.toStringAsFixed(2), description: snapshot.data!.placeName)));
                                 },
                                 text: "Confirm",
                                 styleId: 1),

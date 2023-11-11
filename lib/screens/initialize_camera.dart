@@ -15,7 +15,9 @@ Future<CameraDescription> fetchCamera() async {
 }
 
 class InitializeCamera extends StatefulWidget {
-  const InitializeCamera({super.key});
+  const InitializeCamera({super.key, required this.socialId});
+
+  final String socialId;
 
   @override
   State<InitializeCamera> createState() => _InitializeCameraState();
@@ -35,7 +37,7 @@ class _InitializeCameraState extends State<InitializeCamera> {
                       future: futureCamera,
                       builder: (context, snapshot) {
                         if (snapshot.hasData) {
-                          return TakePictureScreen(camera: snapshot.data!);
+                          return TakePictureScreen(camera: snapshot.data!, socialId: widget.socialId);
                         } else if (snapshot.hasError) {
                           return Text('${snapshot.error}');
                         }

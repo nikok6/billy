@@ -58,10 +58,11 @@ Future<String> convertImageto64(String imagePath) async {
 // }
 
 class DisplayPictureScreen extends StatefulWidget {
-  const DisplayPictureScreen({Key? key, required this.imagePath})
+  const DisplayPictureScreen({Key? key, required this.imagePath, required this.socialId})
       : super(key: key);
 
   final String imagePath;
+  final String socialId;
 
   @override
   State<DisplayPictureScreen> createState() => _DisplayPictureScreenState();
@@ -105,7 +106,7 @@ class _DisplayPictureScreenState extends State<DisplayPictureScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            const ConfirmedScannedReceiptScreen()));
+                            ConfirmedScannedReceiptScreen(socialId: widget.socialId)));
               },
               text: 'Next',
               styleId: 1)

@@ -12,16 +12,19 @@ class InputTotalSplitScreen extends StatefulWidget {
 }
 
 class _InputTotalSplitScreenState extends State<InputTotalSplitScreen> {
-  late TextEditingController _textEditingController;
+  late TextEditingController _amountController;
+  late TextEditingController _descriptionController;
+
   @override
   void initState() {
     super.initState();
-    _textEditingController = TextEditingController();
+    _amountController = TextEditingController();
+    _descriptionController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _textEditingController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -53,7 +56,7 @@ class _InputTotalSplitScreenState extends State<InputTotalSplitScreen> {
               AutoSizeTextField(
                 autofocus: true,
                 fullwidth: false,
-                controller: _textEditingController,
+                controller: _amountController,
                 textAlign: TextAlign.start,
                 keyboardType: TextInputType.number,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(fontSize: 30),
@@ -68,6 +71,7 @@ class _InputTotalSplitScreenState extends State<InputTotalSplitScreen> {
               TextField(
                 style: Theme.of(context).textTheme.bodyMedium,
                 textAlign: TextAlign.center,
+                controller: _descriptionController,
                 decoration: InputDecoration(
                   hintText: 'Description',
                   hintStyle: Theme.of(context).textTheme.labelLarge,
@@ -85,7 +89,7 @@ class _InputTotalSplitScreenState extends State<InputTotalSplitScreen> {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MainSplitScreen()),
+                    MaterialPageRoute(builder: (context) => MainSplitScreen(socialId: widget.socialId, total: _amountController.text, description: _descriptionController.text)),
                   );
                 },
                 child: Text('Next',

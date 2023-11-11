@@ -33,9 +33,11 @@ class TakePictureScreen extends StatefulWidget {
   const TakePictureScreen({
     super.key,
     required this.camera,
+    required this.socialId,
   });
 
   final CameraDescription camera;
+  final String socialId;
 
   @override
   TakePictureScreenState createState() => TakePictureScreenState();
@@ -142,6 +144,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
                   // Pass the automatically generated path to
                   // the DisplayPictureScreen widget.
                   imagePath: image.path,
+                  socialId: widget.socialId,
                 ),
               ),
             );

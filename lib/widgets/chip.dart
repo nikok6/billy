@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 class ReusableChip extends StatelessWidget {
   final IconData? icon;
   final String text;
+  final void Function()? onPressed;
 
-  const ReusableChip({Key? key, this.icon, required this.text}) : super(key: key);
+  const ReusableChip({Key? key, this.icon, required this.text, this.onPressed}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
+    return ActionChip(
       elevation: 0,
       backgroundColor: Theme.of(context).colorScheme.primary,
       side: BorderSide(
@@ -22,6 +23,7 @@ class ReusableChip extends StatelessWidget {
                   ?.copyWith(fontWeight: FontWeight.w600),
       avatar: icon != null ? Icon(icon) : null,
       label: Text(text),
+      onPressed: onPressed,
     );
   }
 }

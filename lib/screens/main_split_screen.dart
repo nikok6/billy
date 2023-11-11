@@ -1,23 +1,32 @@
-
-
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:splitbill/screens/split_confirmation_screen.dart';
 import 'package:splitbill/widgets/chip.dart';
+import 'package:flutter/services.dart';
 
 List<String> name = [
-  'John Doe',
-  'Jane Doe',
+  'niko Doe',
+  'daren Doe',
   'John Dot',
 ];
 
-List<bool> isChecked = [
-  true,
-  true,
-  true,
+List<String> food = [
+  'Chicken',
+  'Beef',
+  'Pork',
+  'Fish',
 ];
 
 class MainSplitScreen extends StatefulWidget {
-  const MainSplitScreen({super.key});
+  const MainSplitScreen(
+      {super.key,
+      required this.socialId,
+      required this.total,
+      required this.description});
+
+  final String socialId;
+  final String total;
+  final String description;
 
   @override
   _MainSplitScreenState createState() => _MainSplitScreenState();
@@ -26,19 +35,146 @@ class MainSplitScreen extends StatefulWidget {
 class _MainSplitScreenState extends State<MainSplitScreen>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
+  late List<List<TextEditingController>> _personShareTextController;
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 4, vsync: this);
+    _personShareTextController = List.generate(
+      name.length,
+      (index) => List.generate(
+        3,
+        (index2) => TextEditingController(),
+      ),
+    );
+    tabController.addListener(_handleTabIndex);
+  }
+
+  @override
+  void dispose() {
+    tabController.removeListener(_handleTabIndex);
+    tabController.dispose();
+    super.dispose();
+  }
+
+  void _handleTabIndex() {
+    setState(() {});
+  }
+
+  List<List<bool>> transposeFoodIsChecked(List<List<bool>> foodIsChecked) {
+    int numberOfPeople = foodIsChecked.length;
+    int numberOfFoods = foodIsChecked.isNotEmpty ? foodIsChecked[0].length : 0;
+
+    List<List<bool>> transposedFoodIsChecked = List.generate(
+        numberOfFoods,
+        (foodIndex) => List.generate(numberOfPeople,
+            (personIndex) => foodIsChecked[personIndex][foodIndex]));
+
+    return transposedFoodIsChecked;
+  }
+
+  List<double> splitBills(List<String> food, List<double> foodPrice,
+      List<List<bool>> foodIsChecked) {
+    int numberOfPeople = foodIsChecked.length;
+
+    // Initialize an array to store the total cost for each person
+    List<double> personTotalCost = List.filled(numberOfPeople, 0.0);
+
+    List<List<bool>> transposedFoodIsChecked = transposeFoodIsChecked(foodIsChecked);
+    // Calculate the total cost for each person based on their chosen foods
+    for (int personIndex = 0; personIndex < numberOfPeople; personIndex++) {
+      for (int foodIndex = 0; foodIndex < food.length; foodIndex++) {
+        if (foodIsChecked[personIndex][foodIndex]) {
+          personTotalCost[personIndex] += foodPrice[foodIndex] /
+              transposedFoodIsChecked[foodIndex]
+                  .where((checked) => checked == true)
+                  .length;
+        }
+      }
+    }
+
+    personTotalCost = personTotalCost.map((cost) => (double.parse(cost.toStringAsFixed(2)))).toList();
+
+    if (sum(personTotalCost) < sum(foodPrice)) {
+      // Calculate the remainder
+      double remainder = double.parse(((sum(foodPrice) - sum(personTotalCost))*100).toStringAsFixed(2));
+      personTotalCost = personTotalCost.map((cost) => (cost*100)).toList();
+      // Distribute the remainder among persons
+      int remainderCounter = 0;
+      for (int i = 0; i < numberOfPeople; i++) {
+        if (foodIsChecked[i].contains(true)) {
+          personTotalCost[i] += remainderCounter < remainder ? 1 : 0;
+          remainderCounter++;
+        }
+      }
+
+      // Convert the shares to dollars
+      personTotalCost = personTotalCost.map((cost) => (cost/100)).toList();
+    }
+    // Return the total cost for each person
+    return personTotalCost;
+  }
+
+  double sum(List<double> numbers) {
+    //convert list of string to list of double
+    List<double> numbersDouble = numbers.map((i) => (i)).toList();
+    return numbersDouble.reduce((value, element) => value + element);
+  }
+
+  List<double> splitMoneyEvenly(
+      String total, List<String> names, List<bool> shouldSplit) {
+    double totalAmount = double.parse(total);
+    int numberOfPeople = names.length;
+
+    int numberOfPeopleToSplit = shouldSplit.where((split) => split).length;
+    int shareWithoutRounding = totalAmount * 100 ~/ numberOfPeopleToSplit;
+
+    // Calculate the remainder
+    int remainder = totalAmount.toInt() % numberOfPeopleToSplit;
+
+    // Initialize personShares with 0 for those who shouldn't split, and shareWithoutRounding for others
+    List<double> personShares = List.generate(numberOfPeople, (index) {
+      return shouldSplit[index] ? shareWithoutRounding.toDouble() : 0;
+    });
+    // Distribute the remainder among persons
+    // Distribute the remainder among persons who should split
+    int remainderCounter = 0;
+    for (int i = 0; i < numberOfPeople; i++) {
+      if (shouldSplit[i]) {
+        personShares[i] += remainderCounter < remainder ? 1 : 0;
+        remainderCounter++;
+      }
+    }
+
+    // Convert the shares to dollars
+    personShares = personShares.map((cost) => (cost/100)).toList();
+
+    return personShares;
   }
 
   int? _selectedValueIndex;
-  List<String> people = ['niko', 'daren', 'john', 'wesley'];
+  double totalShare = 0;
+
   List<List<bool>> foodIsChecked = [
-    [false, false, false, false],
-    [false, false, false, false],
-    [false, false, false, false],
+    [true, false, true, false],
+    [false, true, false, false],
+    [true, false, false, false],
+  ];
+
+  List<double> foodPrice = [10, 20, 30, 40];
+
+  List<List<bool>> personIsChecked = [
+    [true, true, true],
+    [true, true, true],
+    [true, true, true],
+  ];
+
+  List<List<double>> personCurrentShare = [
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
+    [0, 0, 0],
   ];
 
   Widget circle({required String text, required int index}) {
@@ -75,7 +211,7 @@ class _MainSplitScreenState extends State<MainSplitScreen>
             },
           ),
           actions: const [
-            ReusableChip(text: '+ Receipt'),
+            // ReusableChip(text: '+ Receipt'),
             SizedBox(width: 20),
           ],
         ),
@@ -85,7 +221,8 @@ class _MainSplitScreenState extends State<MainSplitScreen>
             const SizedBox(
               height: 10,
             ),
-            Text("Lunch at Tama", style: Theme.of(context).textTheme.bodyLarge),
+            Text(widget.description,
+                style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(
               height: 15,
             ),
@@ -95,7 +232,7 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                     .bodyMedium
                     ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600)),
             Text(
-              "\$500",
+              "\$${widget.total}",
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     fontSize: 50,
                   ),
@@ -186,10 +323,41 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                                 Row(
                                   children: [
                                     ...List.generate(
-                                      people.length,
-                                      (index) => circle(
-                                        index: index,
-                                        text: people[index],
+                                      name.length,
+                                      (index) => Card(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                        child: SizedBox(
+                                          width: 70,
+                                          height: 100,
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              circle(
+                                                index: index,
+                                                text: name[index],
+                                              ),
+                                              const SizedBox(
+                                                height: 5,
+                                              ),
+                                              Text(
+                                                name[index],
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall,
+                                              ),
+                                              Text(
+                                                '\$${personCurrentShare[0][index].toStringAsFixed(2)}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     )
                                   ],
@@ -197,6 +365,107 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                                 const SizedBox(
                                   height: 15,
                                 ),
+                                Column(
+                                  children: [
+                                    //ListView of foods with a price and checkbox in the trailing
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: food.length,
+                                      itemBuilder:
+                                          (BuildContext context, int index) {
+                                        return ListTile(
+                                            horizontalTitleGap: 10,
+                                            contentPadding:
+                                                const EdgeInsets.fromLTRB(
+                                                    10, 0, 10, 0),
+                                            leading: Text('1x',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyMedium),
+                                            title: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  food[index],
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleLarge,
+                                                ),
+                                                const SizedBox(
+                                                  height: 5,
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    ...List.generate(
+                                                      name.length,
+                                                      (index2) => foodIsChecked[
+                                                                      index2]
+                                                                  [index] ==
+                                                              true
+                                                          ? const CircleAvatar(
+                                                              backgroundColor:
+                                                                  Colors.blue,
+                                                              radius: 10,
+                                                            )
+                                                          : const SizedBox(
+                                                              width: 0,
+                                                            ),
+                                                    ),
+                                                  ],
+                                                )
+                                              ],
+                                            ),
+                                            trailing: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.end,
+                                                children: [
+                                                  SizedBox(
+                                                    height: 24,
+                                                    child: Checkbox(
+                                                      side: const BorderSide(
+                                                          color:
+                                                              Color(0xFF666666),
+                                                          width: 2),
+                                                      shape:
+                                                          RoundedRectangleBorder(
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(5),
+                                                      ),
+                                                      value: foodIsChecked[
+                                                          _selectedValueIndex ??
+                                                              0][index],
+                                                      onChanged: (bool? value) {
+                                                        setState(() {
+                                                          foodIsChecked[
+                                                                  _selectedValueIndex ??
+                                                                      0]
+                                                              [index] = value!;
+                                                          personCurrentShare[0] = splitBills(
+                                                              food,
+                                                              foodPrice,
+                                                              foodIsChecked);
+                                                        });
+                                                      },
+                                                    ),
+                                                  ),
+                                                  const SizedBox(
+                                                    height: 5,
+                                                  ),
+                                                  Text('\$${foodPrice[index].toStringAsFixed(2)}',
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .bodyMedium),
+                                                ]));
+                                      },
+                                    ),
+                                  ],
+                                )
+                                //itemized list
                                 // Column(
                                 //   children: [
                                 //     ListView.builder(
@@ -226,7 +495,7 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                                 //               setState(() {
                                 //                 foodIsChecked[_selectedValueIndex ?? 0][index] = value!;
                                 //               });
-                                //             },),  
+                                //             },),
                                 //           ],)
                                 //         );
                                 //       },
@@ -235,365 +504,594 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                                 // ),
                               ],
                             ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 15.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Split by amount',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleLarge,
-                                          ),
-                                          const ReusableChip(
-                                              text: 'Split evenly')
-                                        ],
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 15.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Split by amount',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge,
                                       ),
-                                    ),
-                                    const SizedBox(
-                                      height: 15,
-                                    ),
-                                    SizedBox(
-                                      height: 500,
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount: name.length,
-                                        itemBuilder:
-                                            (BuildContext context, int index) {
-                                          return ListTile(
-                                            horizontalTitleGap: 0,
-                                            contentPadding:
-                                                const EdgeInsets.fromLTRB(
-                                                    0, 0, 10, 0),
-                                            leading: Checkbox(
-                                              side: const BorderSide(
-                                                  color: Color(0xFF666666),
-                                                  width: 2),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              value: isChecked[index],
-                                              onChanged: (bool? value) {
-                                                setState(() {
-                                                  isChecked[index] = value!;
-                                                });
-                                              },
+                                      ReusableChip(
+                                          text: 'Split evenly',
+                                          onPressed: () {
+                                            setState(() {
+                                              personCurrentShare[1] =
+                                                  splitMoneyEvenly(widget.total,
+                                                      name, personIsChecked[0]);
+                                              for (int i = 0;
+                                                  i < name.length;
+                                                  i++) {
+                                                _personShareTextController[0][i]
+                                                        .text =
+                                                    personCurrentShare[1][i]
+                                                        .toString();
+                                              }
+                                            });
+                                          })
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(
+                                  height: 15,
+                                ),
+                                SizedBox(
+                                  height: 500,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: name.length,
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return ListTile(
+                                        horizontalTitleGap: 0,
+                                        contentPadding:
+                                            const EdgeInsets.fromLTRB(
+                                                0, 0, 10, 0),
+                                        leading: Checkbox(
+                                          side: const BorderSide(
+                                              color: Color(0xFF666666),
+                                              width: 2),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                          value: personIsChecked[0][index],
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              personIsChecked[0][index] =
+                                                  value!;
+                                              if (personIsChecked[0][index] ==
+                                                  false) {
+                                                _personShareTextController[0]
+                                                        [index]
+                                                    .text = '0.00';
+                                              } else {
+                                                _personShareTextController[0]
+                                                        [index]
+                                                    .text = '';
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            const Icon(Icons.circle_rounded,
+                                                size: 60),
+                                            const SizedBox(
+                                              width: 10,
                                             ),
-                                            title: Row(
-                                              children: [
-                                                const Icon(Icons.circle_rounded,
-                                                    size: 60),
-                                                const SizedBox(
-                                                  width: 10,
+                                            Text(
+                                              name[index],
+                                              style: personIsChecked[0][index]
+                                                  ? Theme.of(context)
+                                                      .textTheme
+                                                      .titleLarge
+                                                  : Theme.of(context)
+                                                      .textTheme
+                                                      .titleLarge
+                                                      ?.copyWith(
+                                                          color: Colors.grey),
+                                            ),
+                                          ],
+                                        ),
+                                        trailing: SizedBox(
+                                          width: 75,
+                                          child: Row(
+                                            children: [
+                                              Text(
+                                                '\$ ',
+                                                style: personIsChecked[0]
+                                                            [index] ==
+                                                        true
+                                                    ? Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                    : Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                            color: Colors.grey),
+                                              ),
+                                              SizedBox(
+                                                width: 55,
+                                                child: TextField(
+                                                  enabled: personIsChecked[0]
+                                                      [index],
+                                                  controller:
+                                                      _personShareTextController[
+                                                          0][index],
+                                                  textAlign: TextAlign.center,
+                                                  inputFormatters: [
+                                                    FilteringTextInputFormatter
+                                                        .allow(RegExp(
+                                                            r'^\d*\.?\d{0,2}')),
+                                                  ],
+                                                  style: personIsChecked[0]
+                                                              [index] ==
+                                                          true
+                                                      ? Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                      : Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                              color:
+                                                                  Colors.grey),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    border:
+                                                        const UnderlineInputBorder(),
+                                                    hintText: '',
+                                                    hintStyle: Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge,
+                                                  ),
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      personCurrentShare[1]
+                                                              [index] =
+                                                          double.parse(value);
+                                                    });
+                                                  },
                                                 ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 15.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Split by percentage',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge,
+                                      ),
+                                      ReusableChip(
+                                          text: 'Split evenly',
+                                          onPressed: () {
+                                            setState(() {
+                                              personCurrentShare[2] =
+                                                  splitMoneyEvenly(widget.total,
+                                                      name, personIsChecked[1]);
+                                              for (int i = 0;
+                                                  i < name.length;
+                                                  i++) {
+                                                _personShareTextController[1][i]
+                                                        .text =
+                                                    (personCurrentShare[2][i] /
+                                                            double.parse(
+                                                                widget.total) *
+                                                            100)
+                                                        .toStringAsFixed(2);
+                                              }
+                                            });
+                                          })
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(
+                                  height: 15,
+                                ),
+                                SizedBox(
+                                  height: 500,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: name.length,
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return ListTile(
+                                        horizontalTitleGap: 0,
+                                        contentPadding:
+                                            const EdgeInsets.fromLTRB(
+                                                0, 0, 10, 0),
+                                        leading: Checkbox(
+                                          side: const BorderSide(
+                                              color: Color(0xFF666666),
+                                              width: 2),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                          value: personIsChecked[1][index],
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              personIsChecked[1][index] =
+                                                  value!;
+                                              if (personIsChecked[1][index] ==
+                                                  false) {
+                                                _personShareTextController[1]
+                                                        [index]
+                                                    .text = '0';
+                                              } else {
+                                                _personShareTextController[1]
+                                                        [index]
+                                                    .text = '';
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            const Icon(Icons.circle_rounded,
+                                                size: 60),
+                                            const SizedBox(
+                                              width: 10,
+                                            ),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
                                                 Text(
                                                   name[index],
+                                                  style: personIsChecked[1]
+                                                          [index]
+                                                      ? Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                      : Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                              color:
+                                                                  Colors.grey),
+                                                ),
+                                                Text(
+                                                  '\$${double.parse(personCurrentShare[2][index].toStringAsFixed(2))}',
+                                                  style: personIsChecked[1]
+                                                          [index]
+                                                      ? Theme.of(context)
+                                                          .textTheme
+                                                          .labelSmall
+                                                      : Theme.of(context)
+                                                          .textTheme
+                                                          .labelSmall
+                                                          ?.copyWith(
+                                                              color:
+                                                                  Colors.grey),
+                                                )
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        trailing: SizedBox(
+                                          width: 75,
+                                          child: Row(
+                                            children: [
+                                              // Text('\$ ', style: Theme.of(context).textTheme.titleLarge,),
+                                              SizedBox(
+                                                width: 50,
+                                                child: TextField(
+                                                  enabled: personIsChecked[1]
+                                                      [index],
+                                                  controller:
+                                                      _personShareTextController[
+                                                          1][index],
+                                                  textAlign: TextAlign.center,
+                                                  inputFormatters: [
+                                                    FilteringTextInputFormatter
+                                                        .allow(RegExp(
+                                                            r'^\d*\.?\d{0,2}')),
+                                                  ],
+                                                  style: personIsChecked[1]
+                                                          [index]
+                                                      ? Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                      : Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                              color:
+                                                                  Colors.grey),
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    border:
+                                                        const UnderlineInputBorder(),
+                                                    hintText: '',
+                                                    hintStyle: Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge,
+                                                  ),
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      personCurrentShare[2]
+                                                              [index] =
+                                                          double.parse((double
+                                                                      .parse(
+                                                                          value) /
+                                                                  100 *
+                                                                  double.parse(
+                                                                      widget
+                                                                          .total))
+                                                              .toStringAsFixed(
+                                                                  2));
+                                                    });
+                                                  },
+                                                ),
+                                              ),
+                                              Text(
+                                                ' %',
+                                                style: personIsChecked[1][index]
+                                                    ? Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                    : Theme.of(context)
+                                                        .textTheme
+                                                        .titleLarge
+                                                        ?.copyWith(
+                                                            color: Colors.grey),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 15.0),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Split by share',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge,
+                                      ),
+                                      ReusableChip(
+                                          text: 'Split evenly',
+                                          onPressed: () {
+                                            personCurrentShare[3] =
+                                                splitMoneyEvenly(widget.total,
+                                                    name, personIsChecked[2]);
+                                            setState(() {
+                                              for (int i = 0;
+                                                  i < name.length;
+                                                  i++) {
+                                                if (personIsChecked[2][i]) {
+                                                  _personShareTextController[2]
+                                                          [i]
+                                                      .text = '1';
+                                                }
+                                              }
+                                            });
+                                          })
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(
+                                  height: 15,
+                                ),
+                                SizedBox(
+                                  height: 500,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    itemCount: name.length,
+                                    itemBuilder:
+                                        (BuildContext context, int index) {
+                                      return ListTile(
+                                        horizontalTitleGap: 0,
+                                        contentPadding:
+                                            const EdgeInsets.fromLTRB(
+                                                0, 0, 10, 0),
+                                        leading: Checkbox(
+                                          side: const BorderSide(
+                                              color: Color(0xFF666666),
+                                              width: 2),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(5),
+                                          ),
+                                          value: personIsChecked[2][index],
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              personIsChecked[2][index] =
+                                                  value!;
+                                              if (personIsChecked[2][index] ==
+                                                  false) {
+                                                _personShareTextController[2]
+                                                        [index]
+                                                    .text = '0';
+                                              } else {
+                                                _personShareTextController[2]
+                                                        [index]
+                                                    .text = '';
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        title: Row(
+                                          children: [
+                                            const Icon(Icons.circle_rounded,
+                                                size: 60),
+                                            const SizedBox(
+                                              width: 10,
+                                            ),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  name[index],
+                                                  style: personIsChecked[2]
+                                                          [index]
+                                                      ? Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                      : Theme.of(context)
+                                                          .textTheme
+                                                          .titleLarge
+                                                          ?.copyWith(
+                                                              color:
+                                                                  Colors.grey),
+                                                ),
+                                                Text(
+                                                  '\$${double.parse(personCurrentShare[3][index].toStringAsFixed(2))}',
+                                                  style: personIsChecked[2]
+                                                          [index]
+                                                      ? Theme.of(context)
+                                                          .textTheme
+                                                          .labelSmall
+                                                      : Theme.of(context)
+                                                          .textTheme
+                                                          .labelSmall
+                                                          ?.copyWith(
+                                                              color:
+                                                                  Colors.grey),
+                                                )
+                                              ],
+                                            ),
+                                          ],
+                                        ),
+                                        trailing: SizedBox(
+                                          width: 50,
+                                          child: Row(
+                                            children: [
+                                              // Text('\$ ', style: Theme.of(context).textTheme.titleLarge,),
+                                              SizedBox(
+                                                width: 50,
+                                                child: TextField(
+                                                  enabled: personIsChecked[2]
+                                                      [index],
+                                                  controller:
+                                                      _personShareTextController[
+                                                          2][index],
+                                                  textAlign: TextAlign.center,
+                                                  inputFormatters: [
+                                                    FilteringTextInputFormatter
+                                                        .allow(RegExp(
+                                                            r'^\d*\.?\d{0,2}')),
+                                                  ],
                                                   style: Theme.of(context)
                                                       .textTheme
                                                       .titleLarge,
-                                                ),
-                                              ],
-                                            ),
-                                            trailing: SizedBox(
-                                              width: 75,
-                                              child: Row(
-                                                children: [
-                                                  Text(
-                                                    '\$ ',
-                                                    style: Theme.of(context)
+                                                  keyboardType:
+                                                      TextInputType.number,
+                                                  decoration: InputDecoration(
+                                                    border:
+                                                        const UnderlineInputBorder(),
+                                                    hintText: '',
+                                                    hintStyle: Theme.of(context)
                                                         .textTheme
                                                         .titleLarge,
                                                   ),
-                                                  SizedBox(
-                                                    width: 55,
-                                                    child: TextField(
-                                                      enabled: isChecked[index],
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleLarge,
-                                                      keyboardType:
-                                                          TextInputType.number,
-                                                      decoration:
-                                                          InputDecoration(
-                                                        border:
-                                                            const UnderlineInputBorder(),
-                                                        hintText: '',
-                                                        hintStyle:
-                                                            Theme.of(context)
-                                                                .textTheme
-                                                                .titleLarge,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
+                                                  onChanged: (value) {
+                                                    setState(() {
+                                                      totalShare = 0;
+                                                      for (int i = 0;
+                                                          i < name.length;
+                                                          i++) {
+                                                        if (_personShareTextController[
+                                                                2][i]
+                                                            .text
+                                                            .isNotEmpty) {
+                                                          totalShare +=
+                                                              double.parse(
+                                                                  _personShareTextController[
+                                                                          2][i]
+                                                                      .text);
+                                                        }
+                                                      }
+                                                      for (int i = 0;
+                                                          i < name.length;
+                                                          i++) {
+                                                        if (_personShareTextController[
+                                                                2][i]
+                                                            .text
+                                                            .isNotEmpty) {
+                                                          personCurrentShare[3][
+                                                              i] = (double.parse(
+                                                                  _personShareTextController[
+                                                                          2][i]
+                                                                      .text) /
+                                                              totalShare *
+                                                              double.parse(
+                                                                  widget
+                                                                      .total));
+                                                        }
+                                                      }
+                                                    });
+                                                  },
+                                                ),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 15.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Split by percentage',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleLarge,
+                                            ],
                                           ),
-                                          const ReusableChip(
-                                              text: 'Split evenly')
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      height: 15,
-                                    ),
-                                    SizedBox(
-                                      height: 500,
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount: name.length,
-                                        itemBuilder:
-                                            (BuildContext context, int index) {
-                                          return ListTile(
-                                            horizontalTitleGap: 0,
-                                            contentPadding:
-                                                const EdgeInsets.fromLTRB(
-                                                    0, 0, 10, 0),
-                                            leading: Checkbox(
-                                              side: const BorderSide(
-                                                  color: Color(0xFF666666),
-                                                  width: 2),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              value: isChecked[index],
-                                              onChanged: (bool? value) {
-                                                setState(() {
-                                                  isChecked[index] = value!;
-                                                });
-                                              },
-                                            ),
-                                            title: Row(
-                                              children: [
-                                                const Icon(Icons.circle_rounded,
-                                                    size: 60),
-                                                const SizedBox(
-                                                  width: 10,
-                                                ),
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      name[index],
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleLarge,
-                                                    ),
-                                                    Text(
-                                                      '\$100',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .labelSmall,
-                                                    )
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                            trailing: SizedBox(
-                                              width: 75,
-                                              child: Row(
-                                                children: [
-                                                  // Text('\$ ', style: Theme.of(context).textTheme.titleLarge,),
-                                                  SizedBox(
-                                                    width: 50,
-                                                    child: TextField(
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleLarge,
-                                                      keyboardType:
-                                                          TextInputType.number,
-                                                      decoration:
-                                                          InputDecoration(
-                                                        border:
-                                                            const UnderlineInputBorder(),
-                                                        hintText: '',
-                                                        hintStyle:
-                                                            Theme.of(context)
-                                                                .textTheme
-                                                                .titleLarge,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    ' %',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .titleLarge,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 15.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Split by share',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleLarge,
-                                          ),
-                                          const ReusableChip(
-                                              text: 'Split evenly')
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                      height: 15,
-                                    ),
-                                    SizedBox(
-                                      height: 500,
-                                      child: ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount: name.length,
-                                        itemBuilder:
-                                            (BuildContext context, int index) {
-                                          return ListTile(
-                                            horizontalTitleGap: 0,
-                                            contentPadding:
-                                                const EdgeInsets.fromLTRB(
-                                                    0, 0, 10, 0),
-                                            leading: Checkbox(
-                                              side: const BorderSide(
-                                                  color: Color(0xFF666666),
-                                                  width: 2),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(5),
-                                              ),
-                                              value: isChecked[index],
-                                              onChanged: (bool? value) {
-                                                setState(() {
-                                                  isChecked[index] = value!;
-                                                });
-                                              },
-                                            ),
-                                            title: Row(
-                                              children: [
-                                                const Icon(Icons.circle_rounded,
-                                                    size: 60),
-                                                const SizedBox(
-                                                  width: 10,
-                                                ),
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      name[index],
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleLarge,
-                                                    ),
-                                                    Text(
-                                                      '\$100',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .labelSmall,
-                                                    )
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                            trailing: SizedBox(
-                                              width: 50,
-                                              child: Row(
-                                                children: [
-                                                  // Text('\$ ', style: Theme.of(context).textTheme.titleLarge,),
-                                                  SizedBox(
-                                                    width: 50,
-                                                    child: TextField(
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleLarge,
-                                                      keyboardType:
-                                                          TextInputType.number,
-                                                      decoration:
-                                                          InputDecoration(
-                                                        border:
-                                                            const UnderlineInputBorder(),
-                                                        hintText: '',
-                                                        hintStyle:
-                                                            Theme.of(context)
-                                                                .textTheme
-                                                                .titleLarge,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
+                                        ),
+                                      );
+                                    },
+                                  ),
                                 ),
                               ],
-                            
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -618,7 +1116,7 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "\$400 of \$500",
+                      "\$${sum(personCurrentShare[tabController.index]).toStringAsFixed(2)} of \$${widget.total}",
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -628,7 +1126,7 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                       height: 2,
                     ),
                     Text(
-                      "\$100 left",
+                      "\$${(double.parse(widget.total) - sum(personCurrentShare[tabController.index])).toStringAsFixed(2)} left",
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -647,11 +1145,31 @@ class _MainSplitScreenState extends State<MainSplitScreen>
                 foregroundColor: Theme.of(context).colorScheme.secondary,
               ),
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const SplitConfirmationScreen()),
-                );
+                if (double.parse((double.parse(widget.total) -
+                            sum(personCurrentShare[tabController.index]))
+                        .toStringAsFixed(2)) >
+                    0) {
+                  showCupertinoDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                            title: const Text("Error"),
+                            content: const Text(
+                                "Please make sure the split is equal to the total amount."),
+                            actions: [
+                              TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("OK"))
+                            ],
+                          ));
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SplitConfirmationScreen()),
+                  );
+                }
               },
               child: const Text(
                 "Done",
